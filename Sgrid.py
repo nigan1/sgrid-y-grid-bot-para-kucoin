@@ -88,3 +88,4 @@ while True:
 
         if len(sell_orders) == 0: 
                 sys.exit("tomando ganancias, todas las ordenes de ventas ejecutadas")
+                
