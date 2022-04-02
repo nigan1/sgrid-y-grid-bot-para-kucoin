@@ -2,13 +2,19 @@ from kucoin.client import Client
 import config
 import time
 import sys 
+import decimal
 
 client=Client(config.API_KEY,config.API_SECRET_KEY,config.API_PASSPHRASE)
 
 par=client.get_ticker(config.SYMBOL)
+
+order_book=client.get_order_book(par)
+order_book_bids=order_book['bids'][0]
+decimales_moneda=decimal.Decimal(order_book_bids[1])
+
 print("Precio del par {}:{}".format(config.SYMBOL,par["price"]))
 
-POSITION_SIZE=round(config.INVERSION_TOTAL_USDT/float(par["price"]), config.ROUN_ORDER)
+POSITION_SIZE=round(config.INVEST_SIZE/float(par["price"]), decimales_moneda)
 
 buy_orders=[]
 sell_orders=[]
