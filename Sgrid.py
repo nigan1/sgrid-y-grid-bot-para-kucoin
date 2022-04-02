@@ -44,7 +44,7 @@ print("se ha realizado una compra de "+str(compra_inicialInfo['dealSize'])+" en 
 print("#####                                         ORDENES DE VENTA                                         ####")
 #colocar ordenes de venta
 for orden in range(config.NUM_SELL_GRID_LINES):
-        precio=float(par["price"])+(config.GRID_SIZE*(orden+1))
+        precio=round(float(par["price"])+(config.GRID_SIZE*(orden+1)),new_decimales_precio)
         orden_size=config.INVEST_SIZE/precio
         orden_size_round=round(orden_size, new_decimales_orderSize)
         orden=client.create_limit_order(config.SYMBOL,"SELL",precio,orden_size_round)
@@ -56,7 +56,7 @@ for orden in range(config.NUM_SELL_GRID_LINES):
 print("#####                                        ORDENES DE COMPRA                                         ####")
 #colocar ordenes de compra
 for orden in range(config.NUM_BUY_GRID_LINES):
-        precio=float(par["price"])-(config.GRID_SIZE*(orden+1))
+        precio=round(float(par["price"])-(config.GRID_SIZE*(orden+1)),new_decimales_precio)
         orden_size=config.INVEST_SIZE/precio
         orden_size_round=round(orden_size, new_decimales_orderSize)
         orden=client.create_limit_order(config.SYMBOL,"BUY",precio,orden_size_round)
@@ -75,7 +75,7 @@ while True:
                 
                 if orderDetail["isActive"]==False:
                         print("orden de compra ejecutada en {}".format(orderDetail["price"]))
-                        new_price=float(orderDetail["price"])+config.GRID_SIZE
+                        new_price=round(float(orderDetail["price"])+config.GRID_SIZE,new_decimales_precio)
                         new_orden_size=config.INVEST_SIZE/new_price
                         new_orden_size_round=round(new_orden_size, new_decimales_orderSize)
                         new_sell_order=client.create_limit_order(config.SYMBOL,"SELL",new_price,new_orden_size_round)
@@ -93,7 +93,7 @@ while True:
                 
                 if orderDetail["isActive"]==False:
                         print("orden de venta ejecutada en {}".format(orderDetail["price"]))
-                        new_price=float(orderDetail["price"])-config.GRID_SIZE
+                        new_price=round(float(orderDetail["price"])-config.GRID_SIZE,new_decimales_precio)
                         new_orden_size=config.INVEST_SIZE/new_price
                         new_orden_size_round=round(new_orden_size, new_decimales_orderSize)
                         new_sell_order=client.create_limit_order(config.SYMBOL,"BUY",new_price,new_orden_size_round)
