@@ -1,4 +1,4 @@
-API_KEY = 
+API_KEY = ""
 API_SECRET_KEY = ""
 API_PASSPHRASE = ""
 
