@@ -31,7 +31,7 @@ sell_orders=[]
 
 print("#####                                              INFO                                                ####")
 
-invest=config.INVEST_SIZE*config.NUM_SELL_GRID_LINES
+invest=int(config.INVEST_SIZE*config.NUM_SELL_GRID_LINES)
 
 #compra inicial
 compra_inicial=client.create_market_order(config.SYMBOL,"BUY",size=None,funds=round(invest,new_decimales_precio),client_oid=None,remark=None,stp=None,trade_type=None)
