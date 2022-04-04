@@ -8,3 +8,5 @@ Tengase en cuenta que kucoin solo permite 200 ordenes en total, seria ese el may
 
 
 consultar:ordenes_abiertas: pues hace eso, consulta las ordenes abiertas que tengas, cuantas de compra y cuantas de venta
+
+el bot manda notificaciones por medio de telegram, pueden modificarlo para que imprima o haga alguna otra forma que deseen
