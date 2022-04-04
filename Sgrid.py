@@ -3,6 +3,7 @@ import config
 import time
 import sys 
 import decimal
+import telegram_send
 
 
 client=Client(config.API_KEY,config.API_SECRET_KEY,config.API_PASSPHRASE)
@@ -29,79 +30,88 @@ new_decimales_orderSize=new_decimales_orderSize.as_tuple().exponent*-1
 buy_orders=[]
 sell_orders=[]
 
-print("#####                                              INFO                                                ####")
+#####                                        ORDENES DE COMPRA                                         ####
 
-invest=int(config.INVEST_SIZE*config.NUM_SELL_GRID_LINES)
-
-#compra inicial
-compra_inicial=client.create_market_order(config.SYMBOL,"BUY",size=None,funds=round(invest,new_decimales_precio),client_oid=None,remark=None,stp=None,trade_type=None)
-compra_inicialInfo=client.get_order(compra_inicial["orderId"])
-
-print("se ha realizado una compra de "+str(compra_inicialInfo['dealSize'])+" en el par de "+str(config.SYMBOL))
-
-
-
-print("#####                                         ORDENES DE VENTA                                         ####")
-#colocar ordenes de venta
-for orden in range(config.NUM_SELL_GRID_LINES):
-        precio=round(float(par["price"])+(config.GRID_SIZE*(orden+1)),new_decimales_precio)
-        orden_size=config.INVEST_SIZE/precio
-        orden_size_round=round(orden_size, new_decimales_orderSize)
-        orden=client.create_limit_order(config.SYMBOL,"SELL",precio,orden_size_round)
-        sell_orders.append(orden["orderId"])
-        print("Orden de VENTA colocada en {},tamaño de la orden {}".format(precio, orden_size_round))
-
-
-
-print("#####                                        ORDENES DE COMPRA                                         ####")
-#colocar ordenes de compra
-for orden in range(config.NUM_BUY_GRID_LINES):
-        precio=round(float(par["price"])-(config.GRID_SIZE*(orden+1)),new_decimales_precio)
-        orden_size=config.INVEST_SIZE/precio
-        orden_size_round=round(orden_size, new_decimales_orderSize)
-        orden=client.create_limit_order(config.SYMBOL,"BUY",precio,orden_size_round)
-        buy_orders.append(orden["orderId"])
-        print("Orden de COMPRA colocada en {},tamaño de la orden {}".format(precio, orden_size_round))
-
-print("#####                                        OPERACIONES DEL BOT                                         ####")
+cant_orden_compra=0
 
 while True:
+    precio=round(config.MIN_RANGE+(config.GRID_SIZE*cant_orden_compra),new_decimales_precio)
+    orden_size_round=round(config.INVEST_SIZE/precio, new_decimales_orderSize)
+    orden=client.create_limit_order(config.SYMBOL,"BUY",precio,orden_size_round)
+    buy_orders.append(orden["orderId"])
+    print("Orden de COMPRA colocada en {},tamaño de la orden {}".format(precio, orden_size_round))
+    cant_orden_compra=cant_orden_compra+1
+
+    if precio+config.GRID_SIZE>=float(par["price"])-config.GRID_SIZE:
+        break
+
+
+#####                                         ORDENES DE VENTA                                         ####
+cant_orden_ventas=1
+
+#colocar ordenes de venta
+while True:
+    precio=round(float(par["price"])+(config.GRID_SIZE*cant_orden_ventas),new_decimales_precio)
+
+    orden_size_round=round(config.INVEST_SIZE/precio, new_decimales_orderSize)
+    client.create_market_order(config.SYMBOL,"BUY",size=None,funds=round(config.INVEST_SIZE,new_decimales_precio),client_oid=None,remark=None,stp=None,trade_type=None)
+    orden=client.create_limit_order(config.SYMBOL,"SELL",precio,orden_size_round)
+    sell_orders.append(orden["orderId"])
+    print("Orden de VENTA colocada en {},tamaño de la orden {}".format(precio, orden_size_round))
+    cant_orden_ventas=cant_orden_ventas+1
+
+    if precio+config.GRID_SIZE>=config.MAX_RANGE:
+        break
+
+
+#####                                        OPERACIONES DEL BOT                                         ####
+
+while True:
+        try:
         
-        for buy_order in buy_orders:
-                try:
+                for buy_order in buy_orders:
+                
                         orderDetail=client.get_order(buy_order)
-                except:
-                        continue
                 
-                if orderDetail["isActive"]==False:
-                        print("orden de compra ejecutada en {}".format(orderDetail["price"]))
-                        new_price=round(float(orderDetail["price"])+config.GRID_SIZE,new_decimales_precio)
-                        new_orden_size=config.INVEST_SIZE/new_price
-                        new_orden_size_round=round(new_orden_size, new_decimales_orderSize)
-                        new_sell_order=client.create_limit_order(config.SYMBOL,"SELL",new_price,new_orden_size_round)
-                        print("nueva orden de venta posicionada en {},tamaño de la orden {}".format(new_price,new_orden_size_round))
-                        sell_orders.append(new_sell_order["orderId"])
-                        buy_orders.remove(orderDetail["id"])
+                        
+                
+                        if orderDetail["isActive"]==False:
+                        
+                                new_price=round(float(orderDetail["price"])+config.GRID_SIZE,new_decimales_precio)
+                                new_orden_size=config.INVEST_SIZE/new_price
+                                new_orden_size_round=round(new_orden_size, new_decimales_orderSize)
+                                new_sell_order=client.create_limit_order(config.SYMBOL,"SELL",new_price,new_orden_size_round)
+                        
+                                telegram_send.send(messages=["orden de compra ejecutada en {},nueva orden de venta en {}".format(orderDetail["price"],new_price)])
+                                sell_orders.append(new_sell_order["orderId"])
+                                buy_orders.remove(orderDetail["id"])
 
-                time.sleep(config.CHECK_ORDERS_FREQUENCY)
+                        time.sleep(config.CHECK_ORDERS_FREQUENCY)
 
-        for sell_order in sell_orders:
-                try:
+                for sell_order in sell_orders:
+                
                         orderDetail=client.get_order(sell_order)
-                except:
-                        continue
                 
-                if orderDetail["isActive"]==False:
-                        print("orden de venta ejecutada en {}".format(orderDetail["price"]))
-                        new_price=round(float(orderDetail["price"])-config.GRID_SIZE,new_decimales_precio)
-                        new_orden_size=config.INVEST_SIZE/new_price
-                        new_orden_size_round=round(new_orden_size, new_decimales_orderSize)
-                        new_sell_order=client.create_limit_order(config.SYMBOL,"BUY",new_price,new_orden_size_round)
-                        print("nueva orden de compra posicionada en {},tamaño de la orden {}".format(new_price,new_orden_size_round))
-                        buy_orders.append(new_sell_order["orderId"])
-                        sell_orders.remove(orderDetail["id"])
+                
+                        if orderDetail["isActive"]==False:
+                        
+                                new_price=round(float(orderDetail["price"])-config.GRID_SIZE,new_decimales_precio)
+                                new_orden_size=config.INVEST_SIZE/new_price
+                                new_orden_size_round=round(new_orden_size, new_decimales_orderSize)
+                                new_sell_order=client.create_limit_order(config.SYMBOL,"BUY",new_price,new_orden_size_round)
+                        
+                                telegram_send.send(messages=["orden de venta ejecutada en {},nueva orden de compra en {}".format(orderDetail["price"],new_price)])
+                                buy_orders.append(new_sell_order["orderId"])
+                                sell_orders.remove(orderDetail["id"])
 
-                time.sleep(config.CHECK_ORDERS_FREQUENCY)
+                        time.sleep(config.CHECK_ORDERS_FREQUENCY)
 
-        if len(sell_orders) == 0: 
-                sys.exit("tomando ganancias, todas las ordenes de ventas ejecutadas")
+                if len(sell_orders) == 0: 
+                        telegram_send.send(messages=["tomando ganancias, todas las ordenes de ventas ejecutadas"])
+                        sys.exit("tomando ganancias, todas las ordenes de ventas ejecutadas")
+
+                if len(buy_orders) == 0: 
+                        telegram_send.send(messages=["ha bajado el precio fuera del rango del bot"])
+        except:
+                telegram_send.send(messages=["el bot ha dado error por algun motivo, reviselo!"])
+
